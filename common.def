@@ -1,0 +1,64 @@
+
+subcode: dump_matrix(A, M)
+    $print ----\n
+    $for i=0:$(M)
+        $if i==0
+            $print "$(A):-"
+        $print "\t-"
+        $for j=0:$(M)
+            $print "%.3f -", $(A)[i*$(M)+j]
+        $print
+
+subcode: check_data
+    $for i=0:10
+        $dump data[i]
+
+subcode: load_data
+    $local double *data
+    $allocate(N*N) data
+
+    file_in = fopen("in.dat","r")
+    $if !file_in
+        # $die "can open in.dat\n"
+        fprintf(stderr, "Can't open in.dat\n")
+        exit(1)
+
+    n = fread(data, sizeof(double), N*N, file_in)
+    assert(n == N*N)
+
+    fclose(file_in)
+
+#---------------------------------------- 
+subcode: create_random
+    N=$(N)
+
+    &call open_w, "in.dat"
+        $for i=0:N*N
+            $local double t
+            t = (double) rand() / RAND_MAX
+            # $dump t
+            fwrite(&t, sizeof(double), 1, file_out)
+
+        
+#---------------------------------------- 
+subcode: time_start
+    $uselib POSIX
+    $include time
+    $local t_start, t_end: struct timespec
+
+    clock_gettime(CLOCK_MONOTONIC, &t_start)
+
+subcode: time_end
+    clock_gettime(CLOCK_MONOTONIC, &t_end)
+
+    tn_sec = t_end.tv_sec - t_start.tv_sec
+    tn_msec = (t_end.tv_nsec - t_start.tv_sec) / 1000
+    $if tn_msec < 0
+        tn_sec --
+        tn_msec += 1000000
+    printf("  - elapsed time: %d.%06d sec\n", tn_sec, tn_msec)
+
+subcode: time_it
+    $call time_start
+    BLOCK
+    $call time_end

@@ -1,0 +1,51 @@
+include: common.def
+include: c/matrix.def
+
+macros:
+    N: 10000
+    M: 1000
+
+page: test
+    module: c
+    use_double: 1
+    CC: gcc -O2
+
+    N=$(N)
+    $call load_data
+    # $call @check_data
+
+    M=$(M)
+    $local A, B, C: double *
+    $allocate(M*M) C
+
+    A = data
+    B = data+M*M
+
+    $call mult_1
+
+    $for iter=0:10
+        $print Round $iter: 
+        $(for:1-3)
+            $print mult $1: -
+            &call time_it
+                $call mult_$1
+
+    $(if:M<6)
+        $call dump_matrix, A, M
+        $call dump_matrix, B, M
+        $call dump_matrix, C, M
+
+subcode: mult_1
+    $sumcode(M, M) C[i,j] = 0.0
+    $for i=0:M
+        $for k=0:M
+            $for j=0:M
+                C[i*M+j] += A[i*M+k] * B[k*M+j]
+
+subcode: mult_2
+    f_matrix_MM(A, B, C, M, M, M)
+
+subcode: mult_3
+    $uselib blas
+    $call m_mult, A, B, C, $(M)
+
