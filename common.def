@@ -1,4 +1,57 @@
+subcode: run_common(M)
+    N=$(N)
+    $call load_data
+    # $call check_data, 16
 
+    M=$(M)
+    $local A, B, C, D: double *
+    A = data
+    B = data+M*M
+    $call myalloc, M*M, C
+    $call myalloc, M*M, D
+
+subcode: run_check(M)
+    $call @run_common, $(M)
+
+    $call dump_matrix, A, M
+    $call dump_matrix, B, M
+    $call mult_2
+    $call dump_matrix, C, M
+    $call mult_blas
+    $call dump_transpose, C, M
+
+subcode: run_test(M)
+    $call @run_common, $(M)
+    round =(int)(8E9/$(M)/$(M)/$(M))
+    $print "Running tests M = %d round = $round", $(M)
+
+    $call mult_1
+    $sumcode(M, M) D[i,j]=C[i,j]
+
+    $(for:t in 1-3)
+        $print mult $(t): -
+        &call time_it
+            $for iter=0:round
+                $call mult_$(t)
+        $call check, $(t)
+
+    $(if:M<10)
+        $call dump_matrix, A, M
+        $call dump_matrix, B, M
+        $call dump_matrix, C, M
+
+    subcode: check(t)
+        $(if:t=3)
+            $(set:k=j*M+i)
+        $(else)
+            $(set:k=i*M+j)
+        $for i=0:M
+            $for j=0:M
+                $if fabs(C[$(k)] - D[i*M+j]) > 0.0001
+                    $print "Error at (i,j) = ($i, $j)"
+                    break
+
+#-------------------------------- 
 subcode: dump_matrix(A, M)
     $print ----\n
     $for i=0:$(M)
@@ -6,16 +59,24 @@ subcode: dump_matrix(A, M)
             $print "$(A):-"
         $print "\t-"
         $for j=0:$(M)
-            $print "%.3f -", $(A)[i*$(M)+j]
+            $(if:_transpose=1)
+                $print "%.3f -", $(A)[j*$(M)+i]
+            $(else)
+                $print "%.3f -", $(A)[i*$(M)+j]
         $print
 
-subcode: check_data
-    $for i=0:10
+subcode: dump_transpose(A, M)
+    $(set:_transpose=1)
+    $call dump_matrix, $(A), $(M)
+
+subcode: check_data(N)
+    $for i=0:$(N)
         $dump data[i]
 
 subcode: load_data
     $local double *data
-    $allocate(N*N) data
+    # $allocate(N*N) data
+    $call myalloc, N*N, data
 
     file_in = fopen("in.dat","r")
     $if !file_in
@@ -24,9 +85,19 @@ subcode: load_data
         exit(1)
 
     n = fread(data, sizeof(double), N*N, file_in)
+    $if n==0
+        $print "fread failed, error = %d", ferror(file_in)
+        perror("fread")
+    $include assert
     assert(n == N*N)
 
     fclose(file_in)
+
+#---------------------------------------- 
+subcode: myalloc(size, p)
+    $include <malloc.h>
+    $(p) = memalign(32, $(size) * sizeof(double))
+    assert($(p))
 
 #---------------------------------------- 
 subcode: create_random
