@@ -3,7 +3,7 @@ include: matrix.def
 include: simple.def
 # include: ver0.def
 # include: ver3.def
-include: ver5.def
+include: ver4.def
 
 macros:
     N: 10000
@@ -21,38 +21,31 @@ page: test
     $(else)
         $call run_test, 1000
 
-subcode: mult_2_common
-    $sumcode(M*M) C[i]=0.0
-
-    $include <immintrin.h>
-    $local p_A, p_B, p_C: double *
-    $(for:A,B,C)
-        p$1 = $1
-    DUMP_STUB mult_2_init
-
 subcode: mult_2
-    $call @mult_2_common
-    $(if:mult_2_algo)
-        $call $(mult_2_algo)
-    $(else)
-        $call mult_2_4x4
+    $call $(mult_2_algo)
 
-subcode: mult_2_4x4
-    $call @mult_2_common
-    # C[i,j] += A[i,k] * B[k,j]
-    $for i=0:M:4
-        pA = A + i * M
-        $for k=0:M:4
-            pB = B + k * M
-            pC = C + i * M
-            $for j=0:M:4
-                $call mult_4x4
-                pB += 4
-                pC += 4
-            pA += 4
+    subcode: mult_2_common
+        $sumcode(M*M) C[i]=0.0
 
-    subcode: mult_4x4
-        $call $(ver_4x4)
+        $include <immintrin.h>
+        $local p_A, p_B, p_C: double *
+        $(for:A,B,C)
+            p$1 = $1
+        DUMP_STUB mult_2_init
+
+    subcode: mult_2_4x4
+        $call @mult_2_common
+        # C[i,j] += A[i,k] * B[k,j]
+        $for i=0:M:4
+            pA = A + i * M
+            $for k=0:M:4
+                pB = B + k * M
+                pC = C + i * M
+                $for j=0:M:4
+                    BLOCK
+                    pB += 4
+                    pC += 4
+                pA += 4
 
 subcode: mult_3
     $call mult_blas

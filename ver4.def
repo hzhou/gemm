@@ -1,5 +1,14 @@
 macros:
-    ver_4x4: ver4
+    mult_2_algo: gemm_v4
+
+subcode: gemm_v4
+    $local M0,M1,M2,M3:int
+    $(for:0-3)
+        M$1 = M*$1
+
+    $call @mult_2_common
+    &call mult_2_4x4
+        $call ver4
 
 subcode: ver4
     $call load_b
@@ -10,28 +19,20 @@ subcode: ver4
             $call update_c, a$(j), b$(j)
         # c  = b$(i)
         $call store_c
-        $call adjust_pA_pC
-
-    subcode: adjust_pA_pC
-        $(for:pA,pC)
-            $(if:i<3)
-                $1+=M
-            $(else)
-                $1-=M*3
 
     subcode: load_c
         $local c: __m256d
-        c = _mm256_load_pd(pC)
+        c = _mm256_load_pd(pC+M$(i))
 
     subcode: store_c
-        _mm256_store_pd(pC, c)
+        _mm256_store_pd(pC+M$(i), c)
 
     subcode: update_c(a, b)
         c = _mm256_add_pd(c, _mm256_mul_pd($(a), $(b)))
 
     subcode: load_a
         $local a0,a1,a2,a3: __m256d
-        a0 = _mm256_load_pd(pA)
+        a0 = _mm256_load_pd(pA+M$(i))
         a1 = _mm256_permute_pd(a0, 0x5) # 0101
         a2 = _mm256_permute4x64_pd(a0, 0x4e) # 1032
         a3 = _mm256_permute_pd(a2, 0x5) # 0101
