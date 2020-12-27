@@ -1,0 +1,38 @@
+subcode: mult_2_c
+    $call mult_2_common
+
+    $local a1, a2: __m256d
+    $for i=0:M
+        pB = B
+        $for j=0:M:4
+            a1 = _mm256_load_pd(pA)
+            $for jj=0:4
+                a2 = _mm256_set1_pd(0.0)
+                $call add_a1_B_to_a2
+                $call sum_a2, pC
+                pB++
+                pC++
+            pA+=4
+
+    subcode: sum_a2(C)
+        $(if:0)
+            __m128d lo = _mm256_castpd256_pd128(a2);
+            __m128d hi = _mm256_extractf128_pd(a2, 1);
+            lo = _mm_add_pd(lo, hi);
+            __m128d h2 = _mm_unpackhi_pd(lo, lo);
+            h2 = _mm_add_sd(h2, lo);
+            _mm_store_sd($(C), h2)
+        $(else)
+            *$(C) = _mm256_cvtsd_f64(a2)
+
+    subcode: add_a1_B_to_a2
+        $(block:mult_2_init)
+            $local b1: __m256d
+            $local v1, v2: __m256i
+            v2 = _mm256_set1_epi64x(4*M)
+        v1 = _mm256_set_epi64x(3*M, 2*M, M, 0)
+        $for k=0:M:4
+            b1 = _mm256_i64gather_pd(pB, v1, 8)
+            a2 = _mm256_add_pd(a2, _mm256_mul_pd(a1, b1))
+            v1 = _mm256_add_epi64(v1, v2)
+
