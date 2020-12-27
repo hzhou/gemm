@@ -6,22 +6,6 @@ subcode: mult_1
             $for j=0:M
                 C[i*M+j] += A[i*M+k] * B[k*M+j]
 
-subcode: mult_2_a
-    f_matrix_MM(A, B, C, M, M, M)
-
-subcode: mult_2_b
-    $sumcode(M, M) C[i,j] = 0.0
-    $local p_A, p_B, p_C: double *
-    $(for:A,B,C)
-        p_$1 = $1
-    $for i=0:M
-        $for k=0:M
-            p_B = B + k*M
-            $for j=0:M
-                p_C[j] += p_A[k] * p_B[j]
-        p_A += M
-        p_C += M
-
 subcode: mult_mkl
     $uselib mkl_intel_lp64, mkl_sequential, mkl_core, m
     $call m_mult, A, B, C, $(M)
