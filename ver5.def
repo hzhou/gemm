@@ -2,7 +2,6 @@ macros:
     mult_2_algo: mult_2_load_c
 
 subcode: mult_2_load_c
-    $call @mult_2_common
     # C[i,j] += A[i,k] * B[k,j]
     $for i=0:M:4
         pC = C + i * M
@@ -35,23 +34,15 @@ subcode: ver5
     $(for:i in 0-3)
         $call load_a
         $(for:j in 0-3)
-            $call update_c, c$(j), a$(j), b$(j)
-        # c  = b$(i)
-        $call adjust_pA_pC
-
-    subcode: adjust_pA_pC
-        $(for:pA,pC)
-            $(if:i<3)
-                $1+=M
-            $(else)
-                $1-=M*3
+            $call update_c, c$(i), a$(j), b$(j)
+        # c$(i)  = a$(i)
 
     subcode: update_c(c, a, b)
         $(c) = _mm256_add_pd($(c), _mm256_mul_pd($(a), $(b)))
 
     subcode: load_a
         $local a0,a1,a2,a3: __m256d
-        a0 = _mm256_load_pd(pA)
+        a0 = _mm256_load_pd(pA+$(i)*M)
         a1 = _mm256_permute_pd(a0, 0x5) # 0101
         a2 = _mm256_permute4x64_pd(a0, 0x4e) # 1032
         a3 = _mm256_permute_pd(a2, 0x5) # 0101

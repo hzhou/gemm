@@ -16,8 +16,8 @@ page: test
 
     $(if:0)
         $call create_random
-    $(elif:1)
-        $call run_check, 4
+    $(elif:0)
+        $call run_check, 8
     $(else)
         $call run_test, 1000
 
