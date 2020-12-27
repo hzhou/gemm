@@ -17,7 +17,7 @@ subcode: run_check(M)
     $call dump_matrix, B, M
     $call mult_2
     $call dump_matrix, C, M
-    $call mult_blas
+    $call mult_3
     $call dump_transpose, C, M
 
 subcode: run_test(M)
