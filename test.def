@@ -1,7 +1,8 @@
 include: common.def
 include: matrix.def
 include: simple.def
-include: ver3.def
+include: ver0.def
+# include: ver3.def
 
 macros:
     N: 10000
@@ -30,7 +31,7 @@ subcode: mult_2_common
 
 subcode: mult_2
     $call @mult_2_common
-    $(if:0)
+    $(if:ver0)
         $call ver0
     $(else)
         $call mult_2_4x4
