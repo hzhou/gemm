@@ -1,8 +1,9 @@
 include: common.def
 include: matrix.def
 include: simple.def
-include: ver0.def
+# include: ver0.def
 # include: ver3.def
+include: ver4.def
 
 macros:
     N: 10000
@@ -51,7 +52,7 @@ subcode: mult_2_4x4
             pA += 4
 
     subcode: mult_4x4
-        $call ver3
+        $call $(ver_4x4)
 
 subcode: mult_3
     $call mult_blas

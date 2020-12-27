@@ -1,3 +1,6 @@
+macros:
+    ver_4x4: ver1
+
 subcode: ver1
     $call load_4_b
 

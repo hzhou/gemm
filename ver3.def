@@ -1,20 +1,31 @@
+macros:
+    ver_4x4: ver3
+
 subcode: ver3
     $call load_b
-    $local a, a2: __m256d
+    $local a: __m256d
     $(for:i in 0-3)
+        $call load_c
         a  = _mm256_load_pd(pA)
-        a2 = _mm256_load_pd(pC)
+        c = _mm256_load_pd(pC)
         $(for:j in 0-3)
-            a2 = _mm256_add_pd(a2, _mm256_mul_pd(a, b$(j)))
+            c = _mm256_add_pd(c, _mm256_mul_pd(a, b$(j)))
             $(if:j<3)
                 a  = _mm256_permute4x64_pd(a, 0x93) # 2103
-        # a2 = b$(i)
-        _mm256_store_pd(pC, a2)
+        # c = b$(i)
+        $call store_c
         $(for:A,C)
             $(if:i<3)
                 p$1+=M
             $(else)
                 p$1-=M*3
+
+    subcode: load_c
+        $local c: __m256d
+        c = _mm256_load_pd(pC)
+
+    subcode: store_c
+        _mm256_store_pd(pC, c)
 
     subcode: load_b
         $local b0,b1,b2,b3: __m256d
@@ -30,21 +41,3 @@ subcode: ver3
         b2 = _mm256_blend_pd(t2, t0, 0xc) # 1100
         b1 = _mm256_blend_pd(t3, t1, 0x6) # 0110
         b3 = _mm256_blend_pd(t1, t3, 0x6) # 0110
-
-    subcode: load_b_straight
-        $local b0,b1,b2,b3: __m256d
-        $local t0,t1,t2,t3: __m256d
-        $(for:0-3)
-            b$1 = _mm256_load_pd(pB+$1*M)
-        t0 = _mm256_shuffle_pd(b0, b1, 0x0)
-        t1 = _mm256_shuffle_pd(b0, b1, 0xf)
-        t2 = _mm256_shuffle_pd(b2, b3, 0x0)
-        t3 = _mm256_shuffle_pd(b2, b3, 0xf)
-        t2 = _mm256_permute4x64_pd(t2, 0x4e) # 1032
-        t3 = _mm256_permute4x64_pd(t3, 0x4e) # 1032
-        b0 = _mm256_blend_pd(t0, t2, 0xc) # 1100
-        b1 = _mm256_blend_pd(t1, t3, 0xc) # 1100
-        b2 = _mm256_blend_pd(t2, t0, 0xc) # 1100
-        b3 = _mm256_blend_pd(t3, t1, 0xc) # 1100
-        b2 = _mm256_permute4x64_pd(b2, 0x4e) # 1032
-        b3 = _mm256_permute4x64_pd(b3, 0x4e) # 1032

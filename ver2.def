@@ -1,15 +1,18 @@
+macros:
+    ver_4x4: ver2
+
 subcode: ver2
     $call load_b
 
-    $local a, a2: __m256d
+    $local a: __m256d
     $(for:i in 0-3)
+        $call load_c
         a  = _mm256_load_pd(pA)
-        a2 = _mm256_load_pd(pC)
         $(for:j in 0-3)
             a2 = _mm256_add_pd(a2, _mm256_mul_pd(a, b$(j)))
             $(if:j<3)
                 a  = _mm256_permute4x64_pd(a, $(c2103))
-        _mm256_store_pd(pC, a2)
+        $call store_c
         $(for:A,C)
             $(if:i<3)
                 p$1+=M
@@ -19,6 +22,13 @@ subcode: ver2
     macros:
         c3210: 0xe4  # identity
         c2103: 0x93  # rotate 1
+
+    subcode: load_c
+        $local c: __m256d
+        c = _mm256_load_pd(pC)
+
+    subcode: store_c
+        _mm256_store_pd(pC, c)
 
     subcode: load_b
         $local b0,b1,b2,b3: __m256d
